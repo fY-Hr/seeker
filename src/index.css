@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+/* font */
+@font-face {
+  font-family: "BigBlueTermPlus Nerd Font";
+  src: url("./assets/fonts/BigBlueTermPlusNerdFont-Regular.ttf")
+    format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@layer base {
+  * {
+    font-family: "BigBlueTermPlus Nerd Font";
+  }
+}
+
+/* blink animation */
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* hit shake animation */
+@keyframes hit-shake {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(-2px); }
+  40% { transform: translateX(2px); }
+  60% { transform: translateX(-1px); }
+  80% { transform: translateX(1px); }
+  100% { transform: translateX(0); }
+}
+
+@layer utilities {
+  .blink {
+    animation: blink 1.2s step-start infinite;
+  }
+  .hit-shake {
+    animation: hit-shake 0.15s steps(1) both;
+  }
+}
