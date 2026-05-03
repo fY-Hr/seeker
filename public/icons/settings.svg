@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 16 16" fill="currentColor" shape-rendering="crispEdges">
+  <!-- Pixel sliders: three tracks + 3px-wide knobs at different heights -->
+  <path d="
+    M3 1h1v1H3V1z M8 1h1v1H8V1z M13 1h1v1H13V1z
+    M3 2h1v1H3V2z M8 2h1v1H8V2z M13 2h1v1H13V2z
+    M3 3h1v1H3V3z M8 3h1v1H8V3z M13 3h1v1H13V3z
+    M2 4h3v1H2V4z M8 4h1v1H8V4z M13 4h1v1H13V4z
+    M3 5h1v1H3V5z M8 5h1v1H8V5z M13 5h1v1H13V5z
+    M3 6h1v1H3V6z M8 6h1v1H8V6z M13 6h1v1H13V6z
+    M3 7h1v1H3V7z M8 7h1v1H8V7z M12 7h3v1H12V7z
+    M3 8h1v1H3V8z M8 8h1v1H8V8z M13 8h1v1H13V8z
+    M3 9h1v1H3V9z M8 9h1v1H8V9z M13 9h1v1H13V9z
+    M3 10h1v1H3V10z M8 10h1v1H8V10z M13 10h1v1H13V10z
+    M3 11h1v1H3V11z M7 11h3v1H7V11z M13 11h1v1H13V11z
+    M3 12h1v1H3V12z M8 12h1v1H8V12z M13 12h1v1H13V12z
+    M3 13h1v1H3V13z M8 13h1v1H8V13z M13 13h1v1H13V13z
+    M3 14h1v1H3V14z M8 14h1v1H8V14z M13 14h1v1H13V14z
+  "/>
+</svg>

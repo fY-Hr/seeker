@@ -1,41 +1,31 @@
+import NavButton from "./NavButton";
 import { playClickSound } from "../shared/utils/clickSound";
 
 type NavProp = {
-  redirect: (destination: string) => void;
+  page: string;
+  setPage: React.Dispatch<React.SetStateAction<string>>;
 };
 
-export default function Nav({ redirect }: NavProp) {
-  const button =
-    "px-3 py-1 border-2 border-black border-t-[rgb(223,223,223)] border-l-[rgb(223,223,223)] bg-[rgb(246,246,246)] outline-none " +
-    "active:translate-y-px active:shadow-inner active:border-b-[rgb(223,223,223)] active:border-r-[rgb(223,223,223)] active:border-t-black active:border-l-black";
+export default function Nav({ page, setPage }: NavProp) {
+  function changePage(target: string): void {
+    setPage(target);
+    playClickSound();
+  }
 
   return (
-    <nav
-      className="
-        flex 
-        bg-[rgb(240,240,240)]
-        border-b border-black
-      "
-    >
-      <button
-        className={button}
-        onClick={() => {
-          redirect("main");
-          playClickSound();
-        }}
-      >
-        Main
-      </button>
-
-      <button
-        className={button}
-        onClick={() => {
-          redirect("bbox");
-          playClickSound();
-        }}
-      >
-        B-box
-      </button>
+    <nav className="flex shrink-0 bg-[rgb(240,240,240)] border-b border-black">
+      <div className="flex items-center">
+        <NavButton aria-label="Task list" onClick={() => changePage("task-list")}>
+          <img src="/icons/list.svg" alt="" className="h-5 w-5 shrink-0" />
+        </NavButton>
+        <NavButton onClick={() => changePage("main")}>Main</NavButton>
+        <NavButton aria-label="Settings" onClick={() => changePage("settings")}>
+            <img src="/icons/settings.svg" alt="" className="w-5 shrink-0" />
+        </NavButton>
+      </div>
+      <div className="text-sm flex items-center justify-center flex-1">
+        <h1 className="">{page}</h1>
+      </div>
     </nav>
   );
 }
