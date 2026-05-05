@@ -403,7 +403,9 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
                     className={`mt-2 flex w-full items-center justify-between border px-2 py-1 text-left text-sm ${
                       isCompletedSubTasksOpen ? "border-black/40 bg-black/10" : "border-dashed border-black/30 bg-[rgb(240,240,240)]"
                     }`}
-                    onClick={() => {
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={(e) => {
+                      e.currentTarget.blur();
                       playClickSound();
                       setIsCompletedSubTasksOpen((prev) => !prev);
                     }}
@@ -421,7 +423,7 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
                         const isSelected = index === selectedSubTask;
                         return (
                           <div key={subTask.id} ref={(el: HTMLDivElement) => (completedRowRefs.current[index] = el)} className={`flex px-2 py-1 text-sm ${isSelected ? "bg-black/15" : "bg-black/5"} scroll-mt-16 scroll-mb-16 scroll-ml-2 scroll-mr-2`}>
-                            <p className="line-through text-gray-600">{subTask.title}</p>
+                            <p className="line-through text-gray-600">{subTask.title.length > 64 ? subTask.title.slice(0, 50) + "..." : subTask.title}</p>
                           </div>
                         );
                       })}
