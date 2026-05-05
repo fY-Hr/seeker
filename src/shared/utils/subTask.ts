@@ -121,7 +121,7 @@ export async function markSubTaskCompleted(taskId: string, subTaskId: string) {
       if (subTask.id !== subTaskId) return subTask;
       return {
         ...subTask,
-        mark: "completed",
+        mark: subTask.mark === "completed" ? "none" : "completed",
         modifiedAt: now
       };
     });

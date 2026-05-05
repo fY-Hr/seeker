@@ -312,9 +312,7 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
   async function handleMarkSubTaskCompleted() {
     const context = getActiveTaskContext();
     if (!context) return;
-    const incomplete = notCompletedSubTasksOf(context.current);
-    if (incomplete.length === 0) return;
-    const subTask = incomplete[selectedSubTaskRef.current];
+    const subTask = isCompletedSubTasksOpenRef.current ? completedSubTasksOf(context.current)[selectedSubTask] : notCompletedSubTasksOf(context.current)[selectedSubTask];
     if (!subTask) return;
     const result = await markSubTaskCompleted(context.taskId, subTask.id);
     if (result.task) {
@@ -364,11 +362,12 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
             )}
 
             <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
-              {notCompletedSubTasks.length > 0 ? (
-                <div className="flex flex-col gap-1">
-                  <div className="px-1 pt-1 text-[11px] font-semibold uppercase tracking-wide text-gray-600">
-                    Active ({notCompletedSubTasks.length})
-                  </div>
+              <div className="flex flex-col gap-1">
+                <div className="px-1 pt-1 text-[11px] font-semibold uppercase tracking-wide text-gray-600">
+                  Active ({notCompletedSubTasks.length})
+                </div>
+                {notCompletedSubTasks.length > 0 ? (
+                  <div>
                   {notCompletedSubTasks.map((subTask, index) => {
                     const isSelected = index === selectedSubTask;
                     const isEditing = editingSubTaskId === subTask.id;
@@ -395,51 +394,47 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
                             </p>
                           )}
                         </div>
-                      ) : (<div></div>)
-                    );
-                  })}
-                  <button
-                    type="button"
-                    className={`mt-2 flex w-full items-center justify-between border px-2 py-1 text-left text-sm ${
-                      isCompletedSubTasksOpen ? "border-black/40 bg-black/10" : "border-dashed border-black/30 bg-[rgb(240,240,240)]"
-                    }`}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={(e) => {
-                      e.currentTarget.blur();
-                      playClickSound();
-                      setIsCompletedSubTasksOpen((prev) => !prev);
-                    }}
-                  >
-                    <span className="font-medium">Completed ({completedSubTasks.length})</span>
-                    <span className="text-xs text-gray-600">{isCompletedSubTasksOpen ? "Hide" : "Show"}</span>
-                  </button>
-                    <div className="mt-1 flex flex-col gap-1 pl-2">
-                      {isCompletedSubTasksOpen && completedSubTasks.length > 0 && (
-                        <div className="px-1 pt-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                          Archived
+                        ) : (<div></div>)
+                      );
+                    })}
+                  </div>
+                ):(<div className="px-2 py-1 text-xs text-gray-500">
+                  <p>No sub tasks yet. <KeyboardKey>Shift</KeyboardKey> + <KeyboardKey>N</KeyboardKey> to create a new sub task</p>
+                </div>)}
+                <button
+                  type="button"
+                  className={`mt-2 flex w-full items-center justify-between border px-2 py-1 text-left text-sm ${
+                    isCompletedSubTasksOpen ? "border-black/40 bg-black/10" : "border-dashed border-black/30 bg-[rgb(240,240,240)]"
+                  }`}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={(e) => {
+                    e.currentTarget.blur();
+                    playClickSound();
+                    setIsCompletedSubTasksOpen((prev) => !prev);
+                  }}
+                >
+                  <span className="font-medium">Completed ({completedSubTasks.length})</span>
+                  <span className="text-xs text-gray-600">{isCompletedSubTasksOpen ? "Hide" : "Show"}</span>
+                </button>
+                  <div className="mt-1 flex flex-col gap-1 pl-2">
+                    {isCompletedSubTasksOpen && completedSubTasks.length > 0 && (
+                      <div className="px-1 pt-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                        Archived
+                      </div>
+                    )}
+                    {isCompletedSubTasksOpen && completedSubTasks.length > 0 && completedSubTasks.map((subTask, index) => {
+                      const isSelected = index === selectedSubTask;
+                      return (
+                        <div key={subTask.id} ref={(el: HTMLDivElement) => (completedRowRefs.current[index] = el)} className={`flex px-2 py-1 text-sm ${isSelected ? "bg-black/15" : "bg-black/5"} scroll-mt-16 scroll-mb-16 scroll-ml-2 scroll-mr-2`}>
+                          <p className="line-through text-gray-600">{subTask.title.length > 64 ? subTask.title.slice(0, 50) + "..." : subTask.title}</p>
                         </div>
-                      )}
-                      {isCompletedSubTasksOpen && completedSubTasks.length > 0 && completedSubTasks.map((subTask, index) => {
-                        const isSelected = index === selectedSubTask;
-                        return (
-                          <div key={subTask.id} ref={(el: HTMLDivElement) => (completedRowRefs.current[index] = el)} className={`flex px-2 py-1 text-sm ${isSelected ? "bg-black/15" : "bg-black/5"} scroll-mt-16 scroll-mb-16 scroll-ml-2 scroll-mr-2`}>
-                            <p className="line-through text-gray-600">{subTask.title.length > 64 ? subTask.title.slice(0, 50) + "..." : subTask.title}</p>
-                          </div>
-                        );
-                      })}
-                      {isCompletedSubTasksOpen && completedSubTasks.length === 0 && (
-                        <p className="px-2 py-1 text-xs text-gray-500">No completed sub tasks yet.</p>
-                      )}
-                    </div>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center gap-2 text-center">
-                  <p>No sub tasks...</p>
-                  <p>
-                    <KeyboardKey>Shift</KeyboardKey> + <KeyboardKey>N</KeyboardKey> to create a new sub task
-                  </p>
-                </div>
-              )}
+                      );
+                    })}
+                    {isCompletedSubTasksOpen && completedSubTasks.length === 0 && (
+                      <p className="px-2 py-1 text-xs text-gray-500">No completed sub tasks yet.</p>
+                    )}
+                  </div>
+              </div>
             </div>
 
             <ViewHint className="mt-auto w-full shrink-0 pt-2">
