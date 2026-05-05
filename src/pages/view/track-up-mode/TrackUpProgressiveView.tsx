@@ -1,7 +1,7 @@
 import KeyboardKey from "../../../components/KeyboardKey";
 import ViewHint from "../../../components/ViewHint";
 import type { Task } from "../../../shared/type";
-import { createSubTask, deleteSubTask, markSubTaskCompleted, updateSubTaskTitle } from "../../../shared/utils/subTask";
+import { createSubTask, createMultiSubTasks, deleteSubTask, markSubTaskCompleted, updateSubTaskTitle } from "../../../shared/utils/subTask";
 import { loadData } from "../../../shared/utils/storage";
 import { playClickSound } from "../../../shared/utils/clickSound";
 import { useEffect, useRef, useState, useMemo } from "react";
@@ -17,6 +17,7 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [editingSubTaskId, setEditingSubTaskId] = useState<string | null>(null);
   const [draftSubTaskTitle, setDraftSubTaskTitle] = useState("");
+  const [isCreatingMultiSubTasks, setIsCreatingMultiSubTasks] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [isCompletedSubTasksOpen, setIsCompletedSubTasksOpen] = useState(false);
 
@@ -24,6 +25,7 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
   const selectedSubTaskRef = useRef(selectedSubTask);
   const editingSubTaskIdRef = useRef<string | null>(editingSubTaskId);
   const draftSubTaskTitleRef = useRef(draftSubTaskTitle);
+  const isCreatingMultiSubTasksRef = useRef(isCreatingMultiSubTasks);
   const isDeleteConfirmOpenRef = useRef(isDeleteConfirmOpen);
   const isCompletedSubTasksOpenRef = useRef(isCompletedSubTasksOpen);
 
@@ -31,6 +33,7 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
   selectedSubTaskRef.current = selectedSubTask;
   editingSubTaskIdRef.current = editingSubTaskId;
   draftSubTaskTitleRef.current = draftSubTaskTitle;
+  isCreatingMultiSubTasksRef.current = isCreatingMultiSubTasks;
   isDeleteConfirmOpenRef.current = isDeleteConfirmOpen;
   isCompletedSubTasksOpenRef.current = isCompletedSubTasksOpen;
 
@@ -112,6 +115,11 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
       }
 
       if (editingSubTaskIdRef.current) {
+        if (enterKey && !e.shiftKey && isCreatingMultiSubTasksRef.current) {
+          e.preventDefault();
+          await submitDraftSubTasksFromLines();
+          return;
+        }
         if (enterKey && !e.shiftKey) {
           e.preventDefault();
           await submitDraftSubTaskTitle();
@@ -130,6 +138,15 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
       if (e.shiftKey && e.key === "N") {
         playClickSound();
         setIsCompletedSubTasksOpen(false);
+        setIsCreatingMultiSubTasks(false);
+        await handleCreateSubTask();
+        return;
+      }
+
+      if (e.shiftKey && e.key === "M") {
+        playClickSound();
+        setIsCompletedSubTasksOpen(false);
+        setIsCreatingMultiSubTasks(true);
         await handleCreateSubTask();
         return;
       }
@@ -217,11 +234,17 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
     setSelectedSubTask((prev) => Math.min(prev, incomplete.length - 1));
   }
 
-  async function handleCreateSubTask() {
-    if (!currentTaskId) return;
+  function getActiveTaskContext() {
+    const taskId = currentTaskId;
     const current = selectedTaskRef.current;
-    if (!current) return;
-    const result = await createSubTask(currentTaskId);
+    if (!taskId || !current) return null;
+    return { taskId, current };
+  }
+
+  async function handleCreateSubTask() {
+    const context = getActiveTaskContext();
+    if (!context) return;
+    const result = await createSubTask(context.taskId);
     if (!result.task || !result.subTask) return;
     syncSelectedTask(result.task);
     setEditingSubTaskId(result.subTask.id);
@@ -235,6 +258,7 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
     if (incomplete.length === 0) return;
     const subTask = incomplete[selectedSubTaskRef.current];
     if (!subTask) return;
+    setIsCreatingMultiSubTasks(false);
     setEditingSubTaskId(subTask.id);
     setDraftSubTaskTitle(subTask.title);
   }
@@ -242,13 +266,13 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
   function cancelEditSubTask() {
     setEditingSubTaskId(null);
     setDraftSubTaskTitle("");
+    setIsCreatingMultiSubTasks(false);
   }
 
   async function submitDraftSubTaskTitle() {
-    if (!currentTaskId) return;
-    const current = selectedTaskRef.current;
+    const context = getActiveTaskContext();
     const editingId = editingSubTaskIdRef.current;
-    if (!current || !editingId) return;
+    if (!context || !editingId) return;
 
     const nextTitle = draftSubTaskTitleRef.current.trim();
     if (!nextTitle) {
@@ -256,7 +280,7 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
       return;
     }
 
-    const result = await updateSubTaskTitle(currentTaskId, editingId, nextTitle);
+    const result = await updateSubTaskTitle(context.taskId, editingId, nextTitle);
     if (result.task) {
       syncSelectedTask(result.task);
       playClickSound();
@@ -264,23 +288,44 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
     cancelEditSubTask();
   }
 
+  async function submitDraftSubTasksFromLines() {
+    const context = getActiveTaskContext();
+    const editingId = editingSubTaskIdRef.current;
+    if (!context || !editingId) return;
+
+    const result = await createMultiSubTasks(context.taskId, draftSubTaskTitleRef.current, editingId);
+    if (result.task) {
+      syncSelectedTask(result.task);
+      playClickSound();
+      const createdSubTaskId = result.subTasks[0]?.id;
+      if (createdSubTaskId) {
+        const nextIncomplete = notCompletedSubTasksOf(result.task);
+        const createdIndex = nextIncomplete.findIndex((subTask) => subTask.id === createdSubTaskId);
+        if (createdIndex >= 0) {
+          setSelectedSubTask(createdIndex);
+        }
+      }
+    }
+    cancelEditSubTask();
+  }
+
   async function handleMarkSubTaskCompleted() {
-    if (!currentTaskId) return;
-    const current = selectedTaskRef.current;
-    const incomplete = current ? notCompletedSubTasksOf(current) : [];
+    const context = getActiveTaskContext();
+    if (!context) return;
+    const incomplete = notCompletedSubTasksOf(context.current);
     if (incomplete.length === 0) return;
     const subTask = incomplete[selectedSubTaskRef.current];
     if (!subTask) return;
-    const result = await markSubTaskCompleted(currentTaskId, subTask.id);
+    const result = await markSubTaskCompleted(context.taskId, subTask.id);
     if (result.task) {
       syncSelectedTask(result.task);
     }
   }
 
   async function handleDeleteSubTask(isImmediateDelete: boolean) {
-    if (!currentTaskId) return;
-    const current = selectedTaskRef.current;
-    const incomplete = current ? isCompletedSubTasksOpenRef.current ? completedSubTasksOf(current) : notCompletedSubTasksOf(current) : [];
+    const context = getActiveTaskContext();
+    if (!context) return;
+    const incomplete = isCompletedSubTasksOpenRef.current ? completedSubTasksOf(context.current) : notCompletedSubTasksOf(context.current);
     if (incomplete.length === 0) return;
     const subTask = incomplete[selectedSubTaskRef.current];
     if (!subTask) return;
@@ -290,7 +335,7 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
     }
 
     playClickSound();
-    const result = await deleteSubTask(currentTaskId, subTask.id);
+    const result = await deleteSubTask(context.taskId, subTask.id);
     if (result.task) {
       syncSelectedTask(result.task);
     }
@@ -399,7 +444,8 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
               <KeyboardKey>j</KeyboardKey>/<KeyboardKey>k</KeyboardKey> move,
               <KeyboardKey>Space</KeyboardKey>/<KeyboardKey>x</KeyboardKey> toggle done, <KeyboardKey>e</KeyboardKey> edit,{" "}
               <KeyboardKey>Delete</KeyboardKey> delete,{" "}
-              <KeyboardKey>Shift</KeyboardKey>+<KeyboardKey>N</KeyboardKey> new, <KeyboardKey>Shift</KeyboardKey>+<KeyboardKey>I</KeyboardKey> info,{" "}
+              <KeyboardKey>Shift</KeyboardKey>+<KeyboardKey>N</KeyboardKey> new, <KeyboardKey>Shift</KeyboardKey>+<KeyboardKey>M</KeyboardKey> multi-create,{" "}
+              <KeyboardKey>Shift</KeyboardKey>+<KeyboardKey>I</KeyboardKey> info,{" "}
               <KeyboardKey>Shift</KeyboardKey>+<KeyboardKey>Esc</KeyboardKey> task list
             </ViewHint>
           </>
