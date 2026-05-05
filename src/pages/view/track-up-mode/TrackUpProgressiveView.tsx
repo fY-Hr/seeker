@@ -17,7 +17,7 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [editingSubTaskId, setEditingSubTaskId] = useState<string | null>(null);
   const [draftSubTaskTitle, setDraftSubTaskTitle] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const [isCompletedSubTasksOpen, setIsCompletedSubTasksOpen] = useState(false);
 
   const selectedTaskRef = useRef<Task | null>(selectedTask);
@@ -25,21 +25,34 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
   const editingSubTaskIdRef = useRef<string | null>(editingSubTaskId);
   const draftSubTaskTitleRef = useRef(draftSubTaskTitle);
   const isDeleteConfirmOpenRef = useRef(isDeleteConfirmOpen);
+  const isCompletedSubTasksOpenRef = useRef(isCompletedSubTasksOpen);
 
   selectedTaskRef.current = selectedTask;
   selectedSubTaskRef.current = selectedSubTask;
   editingSubTaskIdRef.current = editingSubTaskId;
   draftSubTaskTitleRef.current = draftSubTaskTitle;
   isDeleteConfirmOpenRef.current = isDeleteConfirmOpen;
+  isCompletedSubTasksOpenRef.current = isCompletedSubTasksOpen;
 
-  const rowRefs = useRef<HTMLDivElement[]>([]);
+  const notCompletedRowRefs = useRef<HTMLDivElement[]>([]);
+  const completedRowRefs = useRef<HTMLDivElement[]>([]);
 
-  const notCompletedSubTasks = useMemo(() => {
-    return selectedTaskRef.current?.subTasks.filter((subTask) => subTask.mark !== "completed") ?? [];
-  }, [selectedTaskRef.current]);
-  const completedSubTasks = useMemo(() => {
-    return selectedTaskRef.current?.subTasks.filter((subTask) => subTask.mark === "completed") ?? [];
-  }, [selectedTaskRef.current]);
+  function notCompletedSubTasksOf(task: Task) {
+    return task.subTasks.filter((subTask) => subTask.mark !== "completed");
+  }
+
+  function completedSubTasksOf(task: Task) {
+    return task.subTasks.filter((subTask) => subTask.mark === "completed");
+  }
+
+  const notCompletedSubTasks = useMemo(
+    () => (selectedTask ? notCompletedSubTasksOf(selectedTask) : []),
+    [selectedTask]
+  );
+  const completedSubTasks = useMemo(
+    () => (selectedTask ? completedSubTasksOf(selectedTask) : []),
+    [selectedTask]
+  );
 
   useEffect(() => {
     async function fetchCurrentTask() {
@@ -62,9 +75,16 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
     if (!editingSubTaskId) return;
     setTimeout(() => {
       inputRef.current?.focus();
-      inputRef.current?.select();
+      const length = inputRef.current?.value.length ?? 0;
+      inputRef.current?.setSelectionRange(length, length);
     }, 0);
   }, [editingSubTaskId]);
+
+  useEffect(() => {
+    if (!editingSubTaskId || !inputRef.current) return;
+    inputRef.current.style.height = "auto";
+    inputRef.current.style.height = `${inputRef.current.scrollHeight}px`;
+  }, [draftSubTaskTitle, editingSubTaskId]);
 
   useEffect(() => {
     async function handleKeyDown(e: KeyboardEvent) {
@@ -72,7 +92,9 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
 
       const enterKey = e.key === "Enter";
       const escapeKey = e.key === "Escape" || e.key === "Esc";
-      const subTaskCount = selectedTaskRef.current.subTasks.length;
+      const notCompletedSubTaskCount = notCompletedSubTasksOf(selectedTaskRef.current).length;
+      const completedSubTaskCount = completedSubTasksOf(selectedTaskRef.current).length;
+      const subTaskCount = isCompletedSubTasksOpenRef.current ? completedSubTaskCount : notCompletedSubTaskCount;
 
       if (e.repeat && (enterKey || escapeKey)) {
         return;
@@ -90,7 +112,8 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
       }
 
       if (editingSubTaskIdRef.current) {
-        if (enterKey) {
+        if (enterKey && !e.shiftKey) {
+          e.preventDefault();
           await submitDraftSubTaskTitle();
         }
         if (escapeKey) {
@@ -106,7 +129,14 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
 
       if (e.shiftKey && e.key === "N") {
         playClickSound();
+        setIsCompletedSubTasksOpen(false);
         await handleCreateSubTask();
+        return;
+      }
+
+      if (e.shiftKey && e.key === "C") {
+        setIsCompletedSubTasksOpen((prev) => !prev);
+        setSelectedSubTask(0);
         return;
       }
 
@@ -164,21 +194,27 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
   }, []);
 
   useEffect(() => {
-    if (selectedTask?.subTasks.length === 0) return;
-    const el = rowRefs.current[selectedSubTask];
+    const rowRefs = isCompletedSubTasksOpenRef.current ? completedRowRefs.current : notCompletedRowRefs.current;
+    if (notCompletedSubTasks.length === 0) return;
+    const el = rowRefs[selectedSubTask];
     el?.scrollIntoView({
       block: "nearest",
       behavior: "smooth",
     });
-  }, [selectedSubTask, selectedTask?.subTasks.length]);
+  }, [selectedSubTask, notCompletedSubTasks, isCompletedSubTasksOpen]);
 
   function syncSelectedTask(task: Task | null) {
     setSelectedTask(task);
-    if (task && task.subTasks.length > 0) {
-      setSelectedSubTask((prev) => Math.min(prev, task.subTasks.length - 1));
+    if (!task) {
+      setSelectedSubTask(0);
       return;
     }
-    setSelectedSubTask(0);
+    const incomplete = notCompletedSubTasksOf(task);
+    if (incomplete.length === 0) {
+      setSelectedSubTask(0);
+      return;
+    }
+    setSelectedSubTask((prev) => Math.min(prev, incomplete.length - 1));
   }
 
   async function handleCreateSubTask() {
@@ -188,16 +224,16 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
     const result = await createSubTask(currentTaskId);
     if (!result.task || !result.subTask) return;
     syncSelectedTask(result.task);
-    const nextSubTasks = result.task.subTasks;
     setEditingSubTaskId(result.subTask.id);
     setDraftSubTaskTitle(result.subTask.title);
-    setSelectedSubTask(nextSubTasks.length - 1);
+    setSelectedSubTask(notCompletedSubTasksOf(result.task).length - 1);
   }
 
   function armEditSubTask() {
     const current = selectedTaskRef.current;
-    if (!current || current.subTasks.length === 0) return;
-    const subTask = current.subTasks[selectedSubTaskRef.current];
+    const incomplete = current ? notCompletedSubTasksOf(current) : [];
+    if (incomplete.length === 0) return;
+    const subTask = incomplete[selectedSubTaskRef.current];
     if (!subTask) return;
     setEditingSubTaskId(subTask.id);
     setDraftSubTaskTitle(subTask.title);
@@ -231,8 +267,9 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
   async function handleMarkSubTaskCompleted() {
     if (!currentTaskId) return;
     const current = selectedTaskRef.current;
-    if (!current || current.subTasks.length === 0) return;
-    const subTask = current.subTasks[selectedSubTaskRef.current];
+    const incomplete = current ? notCompletedSubTasksOf(current) : [];
+    if (incomplete.length === 0) return;
+    const subTask = incomplete[selectedSubTaskRef.current];
     if (!subTask) return;
     const result = await markSubTaskCompleted(currentTaskId, subTask.id);
     if (result.task) {
@@ -243,8 +280,9 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
   async function handleDeleteSubTask(isImmediateDelete: boolean) {
     if (!currentTaskId) return;
     const current = selectedTaskRef.current;
-    if (!current || current.subTasks.length === 0) return;
-    const subTask = current.subTasks[selectedSubTaskRef.current];
+    const incomplete = current ? isCompletedSubTasksOpenRef.current ? completedSubTasksOf(current) : notCompletedSubTasksOf(current) : [];
+    if (incomplete.length === 0) return;
+    const subTask = incomplete[selectedSubTaskRef.current];
     if (!subTask) return;
     if (!isImmediateDelete) {
       setIsDeleteConfirmOpen(true);
@@ -280,9 +318,12 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
               </div>
             )}
 
-            <div className="min-h-0 flex-1 space-y-1 overflow-y-auto">
+            <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
               {notCompletedSubTasks.length > 0 ? (
                 <div className="flex flex-col gap-1">
+                  <div className="px-1 pt-1 text-[11px] font-semibold uppercase tracking-wide text-gray-600">
+                    Active ({notCompletedSubTasks.length})
+                  </div>
                   {notCompletedSubTasks.map((subTask, index) => {
                     const isSelected = index === selectedSubTask;
                     const isEditing = editingSubTaskId === subTask.id;
@@ -291,37 +332,57 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
                       isNotCompleted ? (
                         <div
                           key={subTask.id}
-                          className={`px-2 py-1 ${isSelected ? "bg-black/20" : "bg-black/5"}`}
-                          ref={(el: HTMLDivElement) => (rowRefs.current[index] = el)}
+                          className={`px-2 py-1 ${isSelected && !isCompletedSubTasksOpen? "bg-black/20" : "bg-black/5"} scroll-mt-12 scroll-mb-12`}
+                          ref={(el: HTMLDivElement) => (notCompletedRowRefs.current[index] = el)}
                         >
                           {isEditing ? (
-                            <input
+                            <textarea
                               ref={inputRef}
                               value={draftSubTaskTitle}
                               onChange={(e) => setDraftSubTaskTitle(e.target.value)}
-                              className="w-full border border-black bg-white px-2 py-1 text-sm outline-none"
-                              maxLength={64}
+                              className="w-full resize-none overflow-hidden border border-black bg-white px-2 py-1 text-sm outline-none"
+                              maxLength={128}
+                              rows={1}
                             />
                           ) : (
                             <p className={`text-sm ${subTask.mark === "completed" ? "line-through text-gray-600" : ""}`}>
-                              {subTask.title}
+                              {subTask.title.length > 64 ? subTask.title.slice(0, 50) + "..." : subTask.title}
                             </p>
                           )}
                         </div>
                       ) : (<div></div>)
                     );
                   })}
-                  <div className="flex text-sm px-2 py-1 mt-2 border border-dashed bg-[rgb(240,240,240)]">
-                    <p onClick={() => setIsCompletedSubTasksOpen((prev) => !prev)}>completed task</p>
-                  </div>
-                    <div className="flex flex-col gap-1">
-                      {isCompletedSubTasksOpen && completedSubTasks.length > 0 && completedSubTasks.map((subTask) => {
+                  <button
+                    type="button"
+                    className={`mt-2 flex w-full items-center justify-between border px-2 py-1 text-left text-sm ${
+                      isCompletedSubTasksOpen ? "border-black/40 bg-black/10" : "border-dashed border-black/30 bg-[rgb(240,240,240)]"
+                    }`}
+                    onClick={() => {
+                      playClickSound();
+                      setIsCompletedSubTasksOpen((prev) => !prev);
+                    }}
+                  >
+                    <span className="font-medium">Completed ({completedSubTasks.length})</span>
+                    <span className="text-xs text-gray-600">{isCompletedSubTasksOpen ? "Hide" : "Show"}</span>
+                  </button>
+                    <div className="mt-1 flex flex-col gap-1 pl-2">
+                      {isCompletedSubTasksOpen && completedSubTasks.length > 0 && (
+                        <div className="px-1 pt-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                          Archived
+                        </div>
+                      )}
+                      {isCompletedSubTasksOpen && completedSubTasks.length > 0 && completedSubTasks.map((subTask, index) => {
+                        const isSelected = index === selectedSubTask;
                         return (
-                          <div key={subTask.id} className="flex text-sm px-2 py-1">
-                            <p>{subTask.title}</p>
+                          <div key={subTask.id} ref={(el: HTMLDivElement) => (completedRowRefs.current[index] = el)} className={`flex px-2 py-1 text-sm ${isSelected ? "bg-black/15" : "bg-black/5"} scroll-mt-16 scroll-mb-16 scroll-ml-2 scroll-mr-2`}>
+                            <p className="line-through text-gray-600">{subTask.title}</p>
                           </div>
                         );
                       })}
+                      {isCompletedSubTasksOpen && completedSubTasks.length === 0 && (
+                        <p className="px-2 py-1 text-xs text-gray-500">No completed sub tasks yet.</p>
+                      )}
                     </div>
                 </div>
               ) : (
