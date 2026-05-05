@@ -16,7 +16,7 @@ export default function WelcomePage() {
 
         if (e.key === "Enter" && selectedMode) {
           playBipSound();
-          void (async () => {
+          (async () => {
             const current = await loadSettings();
             await saveSettings({ ...current, mode: selectedMode });
             setTimeout(() => {
