@@ -1,7 +1,7 @@
 import KeyboardKey from "../../../components/KeyboardKey";
 import ViewHint from "../../../components/ViewHint";
 import type { Task } from "../../../shared/type";
-import { createSubTask, createMultiSubTasks, deleteSubTask, markSubTaskCompleted, updateSubTaskTitle } from "../../../shared/utils/subTask";
+import { createSubTask, createMultiSubTasks, deleteSubTask, markSubTaskCompleted, updateSubTaskTitle, toggleToTodo } from "../../../shared/utils/subTask";
 import { loadData } from "../../../shared/utils/storage";
 import { playClickSound } from "../../../shared/utils/clickSound";
 import { useEffect, useRef, useState, useMemo } from "react";
@@ -99,8 +99,17 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
       const completedSubTaskCount = completedSubTasksOf(selectedTaskRef.current).length;
       const subTaskCount = isCompletedSubTasksOpenRef.current ? completedSubTaskCount : notCompletedSubTaskCount;
 
-      if (e.repeat && (enterKey || escapeKey)) {
+      if (e.repeat && (escapeKey)) {
         return;
+      }
+
+      if (!isDeleteConfirmOpenRef.current && !editingSubTaskIdRef.current) {
+        if (enterKey) {
+          e.preventDefault();
+          playClickSound();
+          await handleToggleToTodo();
+          return;
+        }
       }
 
       if (isDeleteConfirmOpenRef.current) {
@@ -320,6 +329,17 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
     }
   }
 
+  async function handleToggleToTodo() {
+    const context = getActiveTaskContext();
+    if (!context) return;
+    const subTask = isCompletedSubTasksOpenRef.current ? completedSubTasksOf(context.current)[selectedSubTaskRef.current] : notCompletedSubTasksOf(context.current)[selectedSubTaskRef.current];
+    if (!subTask) return;
+    const result = await toggleToTodo(context.taskId, subTask.id);
+    if (result.task) {
+      syncSelectedTask(result.task);
+    }
+  }
+
   async function handleDeleteSubTask(isImmediateDelete: boolean) {
     const context = getActiveTaskContext();
     if (!context) return;
@@ -367,16 +387,19 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
                   Active ({notCompletedSubTasks.length})
                 </div>
                 {notCompletedSubTasks.length > 0 ? (
-                  <div>
+                  <div className="flex flex-col gap-1">
                   {notCompletedSubTasks.map((subTask, index) => {
                     const isSelected = index === selectedSubTask;
                     const isEditing = editingSubTaskId === subTask.id;
                     const isNotCompleted = subTask.mark !== "completed";
                     return (
-                      isNotCompleted ? (
+                      isNotCompleted && (
                         <div
                           key={subTask.id}
-                          className={`px-2 py-1 ${isSelected && !isCompletedSubTasksOpen? "bg-black/20" : "bg-black/5"} scroll-mt-12 scroll-mb-12`}
+                          className={`px-2 py-1 ${
+                            subTask.mark === "todo" ? isSelected && !isCompletedSubTasksOpen ? "bg-lime-200" : "bg-lime-100" :
+                            isSelected && !isCompletedSubTasksOpen ? "bg-black/20" : "bg-black/5"
+                            } scroll-mt-12 scroll-mb-12`}
                           ref={(el: HTMLDivElement) => (notCompletedRowRefs.current[index] = el)}
                         >
                           {isEditing ? (
@@ -390,11 +413,11 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
                             />
                           ) : (
                             <p className={`text-sm ${subTask.mark === "completed" ? "line-through text-gray-600" : ""}`}>
-                              {subTask.title.length > 64 ? subTask.title.slice(0, 50) + "..." : subTask.title}
+                              {subTask.mark === "todo" ? "[TODO]" : ""} {subTask.title.length > 64 ? subTask.title.slice(0, 50) + "..." : subTask.title}
                             </p>
                           )}
                         </div>
-                        ) : (<div></div>)
+                        )
                       );
                     })}
                   </div>

@@ -23,6 +23,11 @@ function App() {
     await saveSettings({ ...current, showViewHints: next });
   }, []);
 
+  const handleModeSelected = useCallback((mode: "trackup" | "buildup") => {
+    setMode(mode);
+    setIsFirstVisit(false);
+  }, []);
+
   useEffect(() => {
     async function fetchSettings() {
       const settings = await loadSettings();
@@ -62,7 +67,7 @@ function App() {
   }, []);
 
   if (isFirstVisit) {
-    return <WelcomePage />;
+    return <WelcomePage onModeSelected={handleModeSelected} />;
   }
 
   return (

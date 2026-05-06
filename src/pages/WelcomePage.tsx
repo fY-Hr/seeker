@@ -2,7 +2,11 @@ import { useState, useEffect } from "react";
 import { loadSettings, saveSettings } from "../shared/utils/settings";
 import { playBipSound } from "../shared/utils/enterSound";
 
-export default function WelcomePage() {
+type WelcomePageProps = {
+  onModeSelected: (mode: "trackup" | "buildup") => void;
+};
+
+export default function WelcomePage({ onModeSelected }: WelcomePageProps) {
   const [isEntered, setIsEntered] = useState(false);
   const [selectedMode, setSelectedMode] = useState<"trackup" | "buildup" | null>(null);
 
@@ -19,9 +23,7 @@ export default function WelcomePage() {
           (async () => {
             const current = await loadSettings();
             await saveSettings({ ...current, mode: selectedMode });
-            setTimeout(() => {
-              window.location.reload();
-            }, 200);
+            onModeSelected(selectedMode);
           })();
         }
       } else {
@@ -37,7 +39,7 @@ export default function WelcomePage() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [selectedMode, isEntered]);
+  }, [selectedMode, isEntered, onModeSelected]);
 
   return (
     <>
@@ -61,7 +63,7 @@ export default function WelcomePage() {
                 Track-up
               </div>
             </div>
-            <div>
+            {/* <div>
               <div
                 className={
                   selectedMode === "buildup"
@@ -74,7 +76,7 @@ export default function WelcomePage() {
               >
                 Build-up
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       ) : (

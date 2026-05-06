@@ -254,7 +254,10 @@ export default function TaskListView({
       )}
       {tasks.length > 0 ? (
         <section className="min-h-0 flex-1 space-y-1 overflow-y-auto">
-          {sortedTasks.map((task, index) => (
+          {sortedTasks.map((task, index) => { 
+            const activeSubTasks = task.subTasks.filter((subTask) => subTask.mark === "none").length
+            const todoSubTasks = task.subTasks.filter((subTask) => subTask.mark === "todo").length
+            return (
             <div
               key={task.id}
               ref={(el: HTMLDivElement) => (rowRefs.current[index] = el)}
@@ -272,9 +275,11 @@ export default function TaskListView({
                 className={armedTask === task.id ? borderColor(task.urgency ?? "none") : ""}
                 isSelected={index === selectedTask}
                 isArmed={armedTask === task.id}
+                todoSubTasks={todoSubTasks}
+                activeSubTasks={activeSubTasks}
               />
             </div>
-          ))}
+          )})}
         </section>
       ) : (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">

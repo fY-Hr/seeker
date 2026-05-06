@@ -8,6 +8,8 @@ type TaskListPanelProps = {
   className?: string;
   isSelected: boolean;
   isArmed: boolean;
+  todoSubTasks: number;
+  activeSubTasks: number;
 };
 
 const urgencyIndicatorClass: Record<Task["urgency"], string> = {
@@ -31,6 +33,8 @@ export default function TaskListPanel({
   className = "",
   isSelected,
   isArmed,
+  todoSubTasks,
+  activeSubTasks
 }: TaskListPanelProps) {
   const selectedStyle = isSelected ? "bg-black/[0.07]" : "border-l-white";
   const armedStyle = isArmed ? "" : "";
@@ -41,16 +45,24 @@ export default function TaskListPanel({
 
   return (
     <Panel className={`min-w-0 p-3 border-l-4 ${className} ${selectedStyle} ${armedStyle}`}>
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <span className={`text-sm font-bold ${urgencyChevronClass[urgency]}`}>
             {isSelected ? ">" : ""}
           </span>
           <p className={`truncate text-sm ${isSelected ? "font-bold" : "font-medium"}`}>{displayTitle}</p>
         </div>
+        <div
+          className="flex items-center gap-1 text-[11px] text-gray-500"
+          aria-label={`${activeSubTasks} active and ${todoSubTasks} todo subtasks`}
+        >
+          <span className={activeSubTasks > 0 ? "text-gray-700" : "text-gray-400"}>A:{activeSubTasks}</span>
+          <span className="text-gray-400">·</span>
+          <span className={todoSubTasks > 0 ? "text-lime-700" : "text-gray-400"}>T:{todoSubTasks}</span>
+        </div>
         <span
           aria-label={`${urgency} urgency`}
-          className={`h-3 w-3 shrink-0 border border-black ${urgencyIndicatorClass[urgency]}`}
+          className={`h-3 w-4 shrink-0 border border-black ${urgencyIndicatorClass[urgency]}`}
         />
       </div>
       {description ? (

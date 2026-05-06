@@ -138,7 +138,7 @@ export async function markSubTaskCompleted(taskId: string, subTaskId: string) {
   };
 }
 
-export async function toggleSubTaskMark(taskId: string, subTaskId: string) {
+export async function toggleToTodo(taskId: string, subTaskId: string) {
   const now = new Date().toISOString();
   const result = await patchTask(taskId, (task) => {
     const exists = task.subTasks.some((subTask) => subTask.id === subTaskId);
