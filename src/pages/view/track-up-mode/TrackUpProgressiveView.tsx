@@ -408,7 +408,7 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
                               value={draftSubTaskTitle}
                               onChange={(e) => setDraftSubTaskTitle(e.target.value)}
                               className="w-full resize-none overflow-hidden border border-black bg-white px-2 py-1 text-sm outline-none"
-                              maxLength={152}
+                              maxLength={isCreatingMultiSubTasksRef.current ? 1520 : 152  }
                               rows={1}
                             />
                           ) : (
