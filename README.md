@@ -1,7 +1,101 @@
-# Tauri + React + Typescript
+# Seeker
 
-This template should help get you started developing with Tauri, React and Typescript in Vite.
+Seeker is a desktop productivity app built with Tauri, React, TypeScript, and Vite.
 
-## Recommended IDE Setup
+## Tech Stack
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+- Tauri v2
+- React 18
+- TypeScript
+- Vite
+- Tailwind CSS v4
+
+## Development
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Run web development server:
+
+```bash
+npm run dev
+```
+
+Run as a Tauri desktop app:
+
+```bash
+npm run tauri dev
+```
+
+Build web assets:
+
+```bash
+npm run build
+```
+
+Preview production web build:
+
+```bash
+npm run preview
+```
+
+## Keyboard Shortcuts
+
+### Global
+
+- `Shift + Esc`: open task list page
+- `Shift + S`: open settings page
+
+### Welcome Page
+
+- `Enter`: continue from splash / confirm selected mode
+- `Tab`: switch mode option (during mode selection)
+
+### Task List Page
+
+- `Shift + N`: create a new task
+- `j` / `k`: move task selection
+- `Enter`: arm selected task, then confirm to open it
+- `Esc`: unselect armed task / close delete prompt
+- `e`: edit armed task
+- `Delete`: open delete confirmation for armed task
+- `Shift + Delete`: delete armed task immediately
+- `1` / `2` / `3` / `4`: set urgency (`none` / `low` / `medium` / `high`)
+
+### Create / Edit Task Form
+
+- `Enter`: arm draft, then submit when armed
+- `Esc`: close form (or cancel armed draft)
+- `Tab` / `Shift + Tab`: move focus between title and detail fields
+- `Shift + Enter`: insert newline in detail field
+
+### Main Page
+
+- `Shift + N`: create one sub task
+- `Shift + M`: create multiple sub tasks (line-based input)
+- `Shift + C`: show/hide completed sub tasks
+- `Shift + I`: toggle task info panel
+- `j` / `k`: move sub task selection
+- `Alt + j` / `Alt + k`: jump selection by 5 rows
+- `Space` or `x`: toggle selected sub task done/todo
+- `Enter`: toggle selected sub task todo
+- `e`: edit selected sub task
+- `Delete`: open delete confirmation
+- `Shift + Delete`: delete selected sub task immediately
+- `Esc`: close info / cancel current prompt
+
+### Build-up Progressive View
+
+- Setup step 1: `Enter` to continue
+- Setup step 2: `Enter` to confirm target, `Esc` to go back
+- Setup step 3: `Enter` to start, `Esc` to cancel
+- Active session input: `Enter` arms then submits log, `Esc` cancels armed submit
+
+## Notes
+
+- App settings are stored in local app data as `settings.json`.
+- App task data is stored in local app data as `seeker.json`.
+- Mode selection from welcome is applied through React state immediately after saving settings (no full `window.location.reload()`).
