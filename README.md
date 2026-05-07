@@ -30,16 +30,22 @@ Run as a Tauri desktop app:
 npm run tauri dev
 ```
 
-Build web assets:
+## Build Desktop App
 
 ```bash
-npm run build
+npm run tauri build
 ```
 
-Preview production web build:
+Build desktop app directly with Cargo (alternative):
 
 ```bash
-npm run preview
+cargo tauri build
+```
+
+Build artifacts are generated in:
+
+```text
+src-tauri/target/release/bundle/
 ```
 
 ## Keyboard Shortcuts

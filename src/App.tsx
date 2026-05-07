@@ -40,24 +40,32 @@ function App() {
       setCurrentTaskId(data.trackup.currentTaskId ?? null);
     }
 
+    fetchSettings();
+    fetchCurrentTask();
+  }, []);
+
+  useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       const shiftKey = e.shiftKey;
       const escapeKey = e.key === "Escape" || e.key === "Esc";
       const sKey = e.key === "S";
+      const activeElement = document.activeElement as HTMLElement | null;
+      const isTypingField =
+        activeElement?.tagName === "INPUT" ||
+        activeElement?.tagName === "TEXTAREA" ||
+        activeElement?.isContentEditable === true;
 
       if (shiftKey && escapeKey) {
         setPage("task-list");
         playClickSound();
       }
 
-      if(shiftKey && sKey) {
+      if (shiftKey && sKey) {
+        if (isTypingField) return;
         setPage("settings");
         playClickSound();
       }
     }
-
-    fetchSettings();
-    fetchCurrentTask();
 
     window.addEventListener("keydown", handleKeyDown);
 
