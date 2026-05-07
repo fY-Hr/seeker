@@ -1,6 +1,6 @@
 [package]
 name = "seeker"
-version = "0.9.1"
+version = "0.9.2"
 description = "A productivity with a lot of keyboard shortcut"
 authors = ["anteikuwute"]
 edition = "2021"
