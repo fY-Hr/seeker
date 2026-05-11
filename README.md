@@ -50,10 +50,12 @@ src-tauri/target/release/bundle/
 
 ## Keyboard Shortcuts
 
+On macOS, **Cmd** (⌘) is accepted alongside **Ctrl** for the shortcuts below that use a modifier.
+
 ### Global
 
-- `Shift + Esc`: open task list page
-- `Shift + S`: open settings page
+- `Ctrl + Esc`: open task list page
+- `Ctrl + S`: open settings page
 
 ### Welcome Page
 
@@ -62,7 +64,7 @@ src-tauri/target/release/bundle/
 
 ### Task List Page
 
-- `Shift + N`: create a new task
+- `Ctrl + N`: create a new task
 - `j` / `k`: move task selection
 - `Enter`: arm selected task, then confirm to open it
 - `Esc`: unselect armed task / close delete prompt
@@ -80,10 +82,10 @@ src-tauri/target/release/bundle/
 
 ### Main Page
 
-- `Shift + N`: create one sub task
-- `Shift + M`: create multiple sub tasks (line-based input)
-- `Shift + C`: show/hide completed sub tasks
-- `Shift + I`: toggle task info panel
+- `Ctrl + N`: create one sub task
+- `Ctrl + M`: create multiple sub tasks (line-based input)
+- `Ctrl + C`: show/hide completed sub tasks
+- `Ctrl + I`: toggle task info panel
 - `j` / `k`: move sub task selection
 - `Alt + j` / `Alt + k`: jump selection by 5 rows
 - `Space` or `x`: toggle selected sub task done/todo

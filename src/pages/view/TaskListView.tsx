@@ -195,7 +195,7 @@ export default function TaskListView({
 
   function handleKeyDownDeleteTask(e: KeyboardEvent) {
     if (!armedTaskRef.current) return;
-    if (e.key === "Delete" && e.shiftKey) {
+    if (e.key === "Delete" && (e.ctrlKey || e.metaKey)) {
       handleDeleteTask(armedTaskRef.current);
       return;
     }
@@ -285,7 +285,7 @@ export default function TaskListView({
         <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
           <p className="text-center">No task yet,</p>
           <p className="text-center">
-            <KeyboardKey>Shift</KeyboardKey> + <KeyboardKey>N</KeyboardKey> to create a new task.
+            <KeyboardKey>Ctrl</KeyboardKey> + <KeyboardKey>N</KeyboardKey> to create a new task.
           </p>
         </div>
       )}

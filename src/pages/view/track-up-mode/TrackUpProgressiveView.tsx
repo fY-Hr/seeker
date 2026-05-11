@@ -18,13 +18,14 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
   const [editingSubTaskId, setEditingSubTaskId] = useState<string | null>(null);
   const [draftSubTaskTitle, setDraftSubTaskTitle] = useState("");
   const [isCreatingMultiSubTasks, setIsCreatingMultiSubTasks] = useState(false);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
   const [isCompletedSubTasksOpen, setIsCompletedSubTasksOpen] = useState(false);
-
+  
   const selectedTaskRef = useRef<Task | null>(selectedTask);
   const selectedSubTaskRef = useRef(selectedSubTask);
   const editingSubTaskIdRef = useRef<string | null>(editingSubTaskId);
   const draftSubTaskTitleRef = useRef(draftSubTaskTitle);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const selectAllOnFocusRef = useRef(false);
   const isCreatingMultiSubTasksRef = useRef(isCreatingMultiSubTasks);
   const isDeleteConfirmOpenRef = useRef(isDeleteConfirmOpen);
   const isCompletedSubTasksOpenRef = useRef(isCompletedSubTasksOpen);
@@ -79,7 +80,12 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
     setTimeout(() => {
       inputRef.current?.focus();
       const length = inputRef.current?.value.length ?? 0;
-      inputRef.current?.setSelectionRange(length, length);
+      if (selectAllOnFocusRef.current) {
+        inputRef.current?.setSelectionRange(0, length);
+        selectAllOnFocusRef.current = false;
+      } else {
+        inputRef.current?.setSelectionRange(length, length);
+      }
     }, 0);
   }, [editingSubTaskId]);
 
@@ -95,6 +101,7 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
 
       const enterKey = e.key === "Enter";
       const escapeKey = e.key === "Escape" || e.key === "Esc";
+      const mod = e.ctrlKey || e.metaKey;
       const notCompletedSubTaskCount = notCompletedSubTasksOf(selectedTaskRef.current).length;
       const completedSubTaskCount = completedSubTasksOf(selectedTaskRef.current).length;
       const subTaskCount = isCompletedSubTasksOpenRef.current ? completedSubTaskCount : notCompletedSubTaskCount;
@@ -139,12 +146,12 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
         return;
       }
 
-      if (e.shiftKey && e.key === "I") {
+      if (mod && (e.key.toUpperCase() === "I" || e.key.toLowerCase() === "i")) {
         setIsInfoOpen((prev) => !prev);
         return;
       }
 
-      if (e.shiftKey && e.key === "N") {
+      if (mod && (e.key.toUpperCase() === "N" || e.key.toLowerCase() === "n")) {
         playClickSound();
         setIsCompletedSubTasksOpen(false);
         setIsCreatingMultiSubTasks(false);
@@ -152,7 +159,7 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
         return;
       }
 
-      if (e.shiftKey && e.key === "M") {
+      if (mod && (e.key.toUpperCase() === "M" || e.key.toLowerCase() === "m")) {
         playClickSound();
         setIsCompletedSubTasksOpen(false);
         setIsCreatingMultiSubTasks(true);
@@ -160,13 +167,13 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
         return;
       }
 
-      if (e.shiftKey && e.key === "C") {
+      if (mod && (e.key.toUpperCase() === "C" || e.key.toLowerCase() === "c")) {
         setIsCompletedSubTasksOpen((prev) => !prev);
         setSelectedSubTask(0);
         return;
       }
 
-      if (subTaskCount > 0 && e.key === "j") {
+      if (subTaskCount > 0 && (e.key.toUpperCase() === "J" || e.key.toLowerCase() === "j")) {
         setSelectedSubTask((prev) =>
           prev === subTaskCount - 1
             ? 0
@@ -175,7 +182,7 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
         return;
       }
 
-      if (subTaskCount > 0 && e.key === "k") {
+      if (subTaskCount > 0 && (e.key.toUpperCase() === "K" || e.key.toLowerCase() === "k")) {
         setSelectedSubTask((prev) =>
           prev === 0
             ? subTaskCount - 1
@@ -184,12 +191,13 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
         return;
       }
 
-      if (subTaskCount > 0 && e.key.toLowerCase() === "e") {
+      if (subTaskCount > 0 && (e.key.toUpperCase() === "E" || e.key.toLowerCase() === "e")) {
+        if(isCompletedSubTasksOpenRef.current) return;
         armEditSubTask();
         return;
       }
 
-      if (subTaskCount > 0 && (e.key === " " || e.key.toLowerCase() === "x")) {
+      if (subTaskCount > 0 && (e.key === " " || e.key.toUpperCase() === "X" || e.key.toLowerCase() === "x")) {
         e.preventDefault();
         playClickSound();
         await handleMarkSubTaskCompleted();
@@ -256,6 +264,7 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
     const result = await createSubTask(context.taskId);
     if (!result.task || !result.subTask) return;
     syncSelectedTask(result.task);
+    selectAllOnFocusRef.current = true;
     setEditingSubTaskId(result.subTask.id);
     setDraftSubTaskTitle(result.subTask.title);
     setSelectedSubTask(notCompletedSubTasksOf(result.task).length - 1);
@@ -268,6 +277,7 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
     const subTask = incomplete[selectedSubTaskRef.current];
     if (!subTask) return;
     setIsCreatingMultiSubTasks(false);
+    selectAllOnFocusRef.current = false;
     setEditingSubTaskId(subTask.id);
     setDraftSubTaskTitle(subTask.title);
   }
@@ -321,7 +331,7 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
   async function handleMarkSubTaskCompleted() {
     const context = getActiveTaskContext();
     if (!context) return;
-    const subTask = isCompletedSubTasksOpenRef.current ? completedSubTasksOf(context.current)[selectedSubTask] : notCompletedSubTasksOf(context.current)[selectedSubTask];
+    const subTask = isCompletedSubTasksOpenRef.current ? completedSubTasksOf(context.current)[selectedSubTaskRef.current] : notCompletedSubTasksOf(context.current)[selectedSubTaskRef.current];
     if (!subTask) return;
     const result = await markSubTaskCompleted(context.taskId, subTask.id);
     if (result.task) {
@@ -388,12 +398,10 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
                 </div>
                 {notCompletedSubTasks.length > 0 ? (
                   <div className="flex flex-col gap-1">
-                  {notCompletedSubTasks.map((subTask, index) => {
-                    const isSelected = index === selectedSubTask;
-                    const isEditing = editingSubTaskId === subTask.id;
-                    const isNotCompleted = subTask.mark !== "completed";
-                    return (
-                      isNotCompleted && (
+                    {notCompletedSubTasks.map((subTask, index) => {
+                      const isSelected = index === selectedSubTask;
+                      const isEditing = editingSubTaskId === subTask.id;
+                      return (
                         <div
                           key={subTask.id}
                           className={`px-2 py-1 ${
@@ -408,25 +416,23 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
                               value={draftSubTaskTitle}
                               onChange={(e) => setDraftSubTaskTitle(e.target.value)}
                               className="w-full resize-none overflow-hidden border border-black bg-white px-2 py-1 text-sm outline-none"
-                              maxLength={isCreatingMultiSubTasksRef.current ? 1520 : 152  }
                               rows={1}
                             />
                           ) : (
-                            <p className={`text-sm ${subTask.mark === "completed" ? "line-through text-gray-600" : ""}`}>
-                              {subTask.mark === "todo" ? "[TODO]" : ""} {subTask.title.length > 64 ? subTask.title.slice(0, 50) + "..." : subTask.title}
+                            <p className={`text-sm wrap-break-word ${subTask.mark === "completed" ? "line-through text-gray-600" : ""}`}>
+                              {subTask.mark === "todo" ? "[TODO]" : ""} {isSelected && !isCompletedSubTasksOpenRef.current ? subTask.title : subTask.title.length > 84 ? subTask.title.slice(0, 72) + "..." : subTask.title}
                             </p>
                           )}
                         </div>
-                        )
-                      );
+                      )
                     })}
                   </div>
                 ):(<div className="px-2 py-1 text-xs text-gray-500">
-                  <p>No sub tasks yet. <KeyboardKey>Shift</KeyboardKey> + <KeyboardKey>N</KeyboardKey> to create a new sub task</p>
+                  <p>No sub tasks yet. <KeyboardKey>Ctrl</KeyboardKey> + <KeyboardKey>N</KeyboardKey> to create a new sub task</p>
                 </div>)}
                 <button
                   type="button"
-                  className={`mt-2 flex w-full items-center justify-between border px-2 py-1 text-left text-sm ${
+                  className={`mt-2 flex w-full items-center justify-between border px-2 py-1 text-left text-sm outline-none ${
                     isCompletedSubTasksOpen ? "border-black/40 bg-black/10" : "border-dashed border-black/30 bg-[rgb(240,240,240)]"
                   }`}
                   onMouseDown={(e) => e.preventDefault()}
@@ -449,7 +455,7 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
                       const isSelected = index === selectedSubTask;
                       return (
                         <div key={subTask.id} ref={(el: HTMLDivElement) => (completedRowRefs.current[index] = el)} className={`flex px-2 py-1 text-sm ${isSelected ? "bg-black/15" : "bg-black/5"} scroll-mt-16 scroll-mb-16 scroll-ml-2 scroll-mr-2`}>
-                          <p className="line-through text-gray-600">{subTask.title.length > 64 ? subTask.title.slice(0, 50) + "..." : subTask.title}</p>
+                          <p className="line-through text-gray-600">{isSelected && isCompletedSubTasksOpenRef.current ? subTask.title : subTask.title.length > 84 ? subTask.title.slice(0, 70) + "..." : subTask.title}</p>
                         </div>
                       );
                     })}
@@ -464,16 +470,16 @@ export default function TrackUpProgressiveView({ currentTaskId }: TrackUpProgres
               <KeyboardKey>j</KeyboardKey>/<KeyboardKey>k</KeyboardKey> move,
               <KeyboardKey>Space</KeyboardKey>/<KeyboardKey>x</KeyboardKey> toggle done, <KeyboardKey>e</KeyboardKey> edit,{" "}
               <KeyboardKey>Delete</KeyboardKey> delete,{" "}
-              <KeyboardKey>Shift</KeyboardKey>+<KeyboardKey>N</KeyboardKey> new, <KeyboardKey>Shift</KeyboardKey>+<KeyboardKey>M</KeyboardKey> multi-create,{" "}
-              <KeyboardKey>Shift</KeyboardKey>+<KeyboardKey>I</KeyboardKey> info,{" "}
-              <KeyboardKey>Shift</KeyboardKey>+<KeyboardKey>Esc</KeyboardKey> task list
+              <KeyboardKey>Ctrl</KeyboardKey>+<KeyboardKey>N</KeyboardKey> new, <KeyboardKey>Ctrl</KeyboardKey>+<KeyboardKey>M</KeyboardKey> multi-create,{" "}
+              <KeyboardKey>Ctrl</KeyboardKey>+<KeyboardKey>I</KeyboardKey> info,{" "}
+              <KeyboardKey>Ctrl</KeyboardKey>+<KeyboardKey>Esc</KeyboardKey> task list
             </ViewHint>
           </>
         ) : (
           <div className="mb-7 flex flex-1 flex-col items-center justify-center gap-2 text-center">
             <p>No task selected</p>
             <p>
-              <KeyboardKey>Shift</KeyboardKey> + <KeyboardKey>Esc</KeyboardKey> to go to task list
+              <KeyboardKey>Ctrl</KeyboardKey> + <KeyboardKey>Esc</KeyboardKey> to go to task list
             </p>
           </div>
         )}

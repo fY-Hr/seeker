@@ -20,10 +20,9 @@ export default function TaskListPage({ changePage, mode, setCurrentTaskId }: Tas
 
   useEffect(() => {
     async function handleKeyDown(e: KeyboardEvent) {
-      const shiftKey = e.shiftKey;
-      const nKey = e.key === "N";
+      const mod = e.ctrlKey || e.metaKey;
 
-      if (shiftKey && nKey) {
+      if (mod && e.key.toLowerCase() === "n") {
         setLastEditedTaskId(null);
         setTaskForm({ mode: "create" });
         playClickSound();
