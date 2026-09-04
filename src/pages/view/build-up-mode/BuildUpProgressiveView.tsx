@@ -35,7 +35,9 @@ export default function BuildUpProgressiveView() {
       title: titleValue,
       targetLog,
       log: logToSave,
-      bLevel: targetLog > 0 ? (logToSave.length / targetLog) * 100 : 0,
+      bLevel: targetLog > 0 
+        ? Math.min(Math.round((logToSave.length / targetLog) * 100), 999)
+        : 0, //To make Battery Percentage not raw float
     };
     data.buildup.today = nextToday;
     await saveData(data);
@@ -200,7 +202,7 @@ export default function BuildUpProgressiveView() {
         <>
           <div className={panel}>
             <div className="flex justify-between">
-              <h4 className="mb-2">Battery Box: {bLevel}%</h4>
+              <h4 className="mb-2">Battery Box: {Math.round(bLevel)}%</h4>
               <h4 className="mb-2">[{titleValue}]</h4>
             </div>
 
