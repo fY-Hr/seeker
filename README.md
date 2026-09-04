@@ -55,7 +55,7 @@ On macOS, **Cmd** (⌘) is accepted alongside **Ctrl** for the shortcuts below t
 ### Global
 
 - `Ctrl + Esc`: open task list page
-- `Ctrl + S`: open settings page
+- `Ctrl + +`: open settings page
 
 ### Welcome Page
 
@@ -70,7 +70,7 @@ On macOS, **Cmd** (⌘) is accepted alongside **Ctrl** for the shortcuts below t
 - `Esc`: unselect armed task / close delete prompt
 - `e`: edit armed task
 - `Delete`: open delete confirmation for armed task
-- `Shift + Delete`: delete armed task immediately
+- `Ctrl/Cmd + Delete`: delete armed task immediately
 - `1` / `2` / `3` / `4`: set urgency (`none` / `low` / `medium` / `high`)
 
 ### Create / Edit Task Form
